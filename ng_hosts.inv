@@ -1,0 +1,2 @@
+[nginx]
+server1 ansible_host=51.250.0.82 ansible_connection=ssh ansible_user=ugbd2

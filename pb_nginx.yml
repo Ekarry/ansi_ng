@@ -1,0 +1,75 @@
+---
+- name: make read key
+  hosts: localhost
+  become: sudo
+  tasks:
+  - name: key read other
+    file:
+      path={{ item }} 
+      mode=0755
+    with_items:
+      - /etc/ssl/private/
+      - /etc/ssl/private/nginx-selfsigned.key
+
+- name: install nginx
+  hosts: server1 
+  become: true 
+  tasks: 
+  - name: Install nginx via apt 
+    ansible.builtin.apt: 
+     state: latest 
+     update_cache: yes 
+ 
+  - name: Copy nginx config 
+    copy: 
+       src: ng_conf/defaul-site.conf 
+       dest: /etc/nginx/sites-enabled 
+       mode: 0644 
+       owner: root 
+       group: root 
+       validate: bash -c 'nginx -t -c /dev/stdin <<< "events {worker_connections 10; http { include %s; }"' 
+  - name: Create Site directory  
+    copy:  
+       src: mysite  
+       dest: /var/www  
+       mode: 0755  
+       owner: root  
+       group: root
+
+  - name: Create SSL directory  
+    file:  
+       path: /etc/nginx/ssl  
+       state: directory  
+       mode: 0600 
+       owner: root 
+       group: root    
+  - name: Copy nginx SSL crt  
+    copy:  
+       src: /etc/ssl/certs/nginx-selfsigned.crt  
+       dest: /etc/nginx/ssl/nginx.crt  
+       mode: 0600  
+       owner: root  
+       group: root 
+  - name: Copy nginx SSL key  
+    copy:  
+       src: /etc/ssl/private/nginx-selfsigned.key 
+       dest: /etc/nginx/ssl/nginx.key  
+       mode: 0600  
+       owner: root  
+       group: root   
+  - name: Restarting nginx 
+    systemd: 
+       name: nginx 
+       state: restarted
+
+- name: make unread key
+  hosts: localhost
+  become: true
+  tasks:
+  - name: key unread other
+    file:
+      path={{ item }} 
+      mode=0640
+    with_items:
+      - /etc/ssl/private/                    
+      - /etc/ssl/private/nginx-selfsigned.key
